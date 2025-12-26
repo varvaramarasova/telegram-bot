@@ -70,15 +70,15 @@ async def handle_all(message: types.Message):
             await message.answer(f"Ошибка при получении погоды: {e}")
 
 async def main():
-    # Polling бота
-    polling_task = asyncio.create_task(dp.start_polling(bot, skip_updates=True))
-    
-    # HTTP сервер для Render
+    # ✅ HTTP СЕРВЕР ПЕРВЫМ (Render увидит порт за 3 сек!)
     port = int(os.getenv("PORT", 10000))
     http_server = HTTPServer(("0.0.0.0", port), Handler)
     server_task = asyncio.to_thread(http_server.serve_forever)
     
-    await asyncio.gather(polling_task, server_task)
+    # Bot ПОТОМ
+    polling_task = asyncio.create_task(dp.start_polling(bot, skip_updates=True))
+    
+    await asyncio.gather(server_task, polling_task)
 
 if __name__ == "__main__":
     asyncio.run(main())
