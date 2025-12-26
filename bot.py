@@ -1,11 +1,10 @@
 import asyncio
 import requests
+import os
+from http.server import HTTPServer, BaseHTTPRequestHandler
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.exceptions import TelegramAPIError
-import os
-
-
 
 TOKEN = os.getenv("BOT_TOKEN")        
 API_KEY = os.getenv("WEATHER_API_KEY") 
@@ -14,6 +13,13 @@ ADMIN_ID = 2015990328
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+
+class Handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Bot is running!")
 
 @dp.message()
 async def handle_all(message: types.Message):
@@ -64,7 +70,15 @@ async def handle_all(message: types.Message):
             await message.answer(f"Ошибка при получении погоды: {e}")
 
 async def main():
-    await dp.start_polling(bot, skip_updates=True)
+    # Polling бота
+    polling_task = asyncio.create_task(dp.start_polling(bot, skip_updates=True))
+    
+    # HTTP сервер для Render
+    port = int(os.getenv("PORT", 10000))
+    http_server = HTTPServer(("0.0.0.0", port), Handler)
+    server_task = asyncio.to_thread(http_server.serve_forever)
+    
+    await asyncio.gather(polling_task, server_task)
 
 if __name__ == "__main__":
     asyncio.run(main())
