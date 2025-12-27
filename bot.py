@@ -39,7 +39,7 @@ def get_main_keyboard():
 async def start(message: types.Message):
     keyboard = get_main_keyboard()
     await message.answer(
-        "Бот работает через Render Webhook! ✨\nНапиши город — скажу погоду 🌤", 
+        "Бот работает через Render Webhook! ✨", 
         reply_markup=keyboard
     )
 
@@ -141,3 +141,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
