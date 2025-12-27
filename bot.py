@@ -4,6 +4,7 @@ import requests
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.exceptions import TelegramAPIError
 from aiohttp import web
 
@@ -11,7 +12,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 API_KEY = os.getenv("WEATHER_API_KEY")
 ADMIN_ID = int(os.getenv("ADMIN_ID", "2015990328"))
 
-WEBHOOK_HOST = os.getenv("WEBHOOK_URL")          # https://yourapp.onrender.com
+WEBHOOK_HOST = os.getenv("WEBHOOK_URL")
 WEBHOOK_PATH = f"/webhook/{TOKEN}"
 WEBHOOK_URL = WEBHOOK_HOST + WEBHOOK_PATH
 
@@ -19,11 +20,28 @@ bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode="HTML"))
 dp = Dispatcher()
 
 
+# ------------------ КЛАВИАТУРЫ ---------------------
+def get_main_keyboard():
+    keyboard = ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Получить подборку")],
+            [KeyboardButton(text="Узнать погоду")]
+        ],
+        resize_keyboard=True,
+        one_time_keyboard=False
+    )
+    return keyboard
+
+
 # ------------------ ОБРАБОТЧИКИ ---------------------
 
 @dp.message(Command("start"))
 async def start(message: types.Message):
-    await message.answer("Бот работает через Render Webhook! ✨\nНапиши город — скажу погоду 🌤")
+    keyboard = get_main_keyboard()
+    await message.answer(
+        "Бот работает через Render Webhook! ✨\nНапиши город — скажу погоду 🌤", 
+        reply_markup=keyboard
+    )
 
 
 @dp.message()
@@ -39,18 +57,21 @@ async def handle_all(message: types.Message):
         print("Ошибка админу:", e)
 
     if message.text == "Получить подборку":
+        keyboard = get_main_keyboard()
         await message.answer(
             "Вот твоя награда\n\n"
             "1️⃣ спасибо\n"
             "2️⃣ большое\n"
             "3️⃣ данисик\n"
             "4️⃣ ты\n"
-            "5️⃣ хорошка"
+            "5️⃣ хорошка",
+            reply_markup=keyboard
         )
         return
 
     if message.text == "Узнать погоду":
-        await message.answer("Напиши город 🌤")
+        keyboard = get_main_keyboard()
+        await message.answer("Напиши город 🌤", reply_markup=keyboard)
         return
 
     # Погода
@@ -60,7 +81,8 @@ async def handle_all(message: types.Message):
         data = requests.get(url, timeout=10).json()
 
         if data.get("cod") != 200:
-            await message.answer("Не могу найти такой город 😔")
+            keyboard = get_main_keyboard()
+            await message.answer("Не могу найти такой город 😔", reply_markup=keyboard)
             return
 
         desc = data["weather"][0]["description"]
@@ -68,16 +90,19 @@ async def handle_all(message: types.Message):
         humidity = data["main"]["humidity"]
         wind = data["wind"]["speed"]
 
+        keyboard = get_main_keyboard()
         await message.answer(
             f"Погода в {city}:\n"
             f"{desc}\n"
             f"🌡 Температура: {temp}°C\n"
             f"💧 Влажность: {humidity}%\n"
-            f"💨 Ветер: {wind} м/с"
+            f"💨 Ветер: {wind} м/с",
+            reply_markup=keyboard
         )
 
     except Exception as e:
-        await message.answer(f"Ошибка погоды: {e}")
+        keyboard = get_main_keyboard()
+        await message.answer(f"Ошибка погоды: {e}", reply_markup=keyboard)
 
 
 # ------------------ WEBHOOK ---------------------
