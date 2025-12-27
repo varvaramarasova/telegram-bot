@@ -4,7 +4,7 @@ import requests
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Update
 from aiogram.exceptions import TelegramAPIError
 from aiohttp import web
 
@@ -111,10 +111,12 @@ async def on_shutdown(app):
     await bot.session.close()   # <-- фикс Unclosed session
 
 
+# ✅ Исправленный handle_webhook для aiogram v3
 async def handle_webhook(request: web.Request):
-    update = await request.json()
+    data = await request.json()
+    update = Update.model_validate(data)  # <-- преобразуем JSON в объект Update
     await dp.feed_webhook_update(bot, update)
-    return web.Response()
+    return web.Response(status=200)
 
 
 async def health(request):
@@ -134,6 +136,6 @@ def main():
     web.run_app(app, host="0.0.0.0", port=port)
 
 
-# ❗ правильная строка (у тебя была сломана)
+# ❗️ правильная строка запуска
 if __name__ == "__main__":
     main()
